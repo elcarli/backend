@@ -1,8 +1,9 @@
 const createApp = require('./app');
+require('dotenv').config();
 
 const app = createApp();
 
-app.listen(3000, err => {
+app.listen(process.env.PORT, err => {
   if (err) {
     console.error("Error: ", err);
     return;

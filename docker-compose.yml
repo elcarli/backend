@@ -1,0 +1,24 @@
+version: '3'
+services:
+  api:
+    restart: always
+    build: .
+    ports:
+      - 80:3000
+    environment: 
+      # Server port
+      - PORT=3000
+      # MongoDB
+      - MONGO_URI=mongodb://database:27017/vozy
+    depends_on:
+      - database
+
+  database:
+    image: mongo
+    ports:
+      - 27020:27017
+    volumes:
+      - mongodb:/data/db
+      
+volumes:
+ mongodb:
