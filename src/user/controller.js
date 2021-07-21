@@ -11,8 +11,13 @@ async function getAll(req, res, next) {
 
 async function getOne({ params: { id } }, res, next) {
   try {
-    const result = await User.findById(id)
-    res.status(200).json(result)
+    const user = await User.findById(id)
+    if (user) {
+      const result = await User.findById(id)
+      res.status(200).json(result)
+    } else {
+      res.status(404).json({ message: 'User does not exist' })
+    }
   } catch (error) {
     next(error)
   }
@@ -20,15 +25,20 @@ async function getOne({ params: { id } }, res, next) {
 
 async function create({ body: { name, email, password } }, res, next) {
   try {
-    const newUser = {
-      name, email, password
-    }
-    let result = await User.create(newUser)
-    
-    data = result.toObject()
-    delete data.password
+    const users = await User.find({ email: email })
+    if (users.length > 0) {
+      res.status(400).json({ message: 'email already registered' })
+    } else {
+      const newUser = {
+        name, email, password
+      }
+      let result = await User.create(newUser)
 
-    res.status(201).json(data)
+      const data = result.toObject()
+      delete data.password
+
+      res.status(201).json(data)
+    }
   } catch (error) {
     next(error)
   }
@@ -55,7 +65,7 @@ async function deleteOne({ params: { id } }, res, next) {
     if (result) {
       res.status(200).send(true)
     } else {
-      res.status(400).send(false)
+      res.status(404).send(false)
     }
   } catch (error) {
     next(error)
