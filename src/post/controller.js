@@ -12,7 +12,11 @@ async function getAll(req, res, next) {
 async function getOne({ params: { id } }, res, next) {
   try {
     const result = await Post.findById(id).populate('user')
-    res.status(200).json(result)
+    if (result) {
+      res.status(200).json(result)
+    } else {
+      res.status(404).json({ message: 'Post does not exist' })
+    }
   } catch (error) {
     next(error)
   }
@@ -57,7 +61,7 @@ async function deleteOne({ params: { id } }, res, next) {
     if (result) {
       res.status(200).send(true)
     } else {
-      res.status(400).send(false)
+      res.status(404).send(false)
     }
   } catch (error) {
     next(error)

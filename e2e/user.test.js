@@ -33,6 +33,7 @@ describe('USER tests', () => {
 
   beforeAll(async () => {
     await User.deleteMany({});
+    await Post.deleteMany({});
     user1 = await User.create(initialUsers[0])
     user2 = await User.create(initialUsers[1])
     initialPosts = [
