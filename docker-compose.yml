@@ -10,6 +10,9 @@ services:
       - PORT=3000
       # MongoDB
       - MONGO_URI=mongodb://database:27017/vozy
+      - MONGO_URI_TEST=mongodb://database:27017/vozytest
+      # JWT
+      - JWT_SECRET=carlosarrieta
     depends_on:
       - database
 
