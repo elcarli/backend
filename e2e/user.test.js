@@ -23,11 +23,13 @@ let initialPosts = []
 
 const constants = {
   FAKEID: '60f71835b9dafe48c47050aa',
-  INVALIDID: '123'
+  INVALIDID: '123',
+  INVALIDTOKEN: 'eyJhbGciOiJIsInR5cCI6IkpXVABC.eyJfaWQiOiI2MGY4MmEymYjYzODEiLCJuYW1lIjoiY2FybG9zIiwiZW1haWwYXRlZEFowLCJpYXQiOjE2MjY4ODUxODgsImV4cCI6MTYyNjg4NjA4OH0.kKSzQV9Yq3fQz2Kz3Z5WAZNSKqAEl6YSXlWE'
 }
 
 let user1 = {}
 let user2 = {}
+let token = ''
 
 describe('USER tests', () => {
 
@@ -49,6 +51,15 @@ describe('USER tests', () => {
       }
     ]
     await Post.create(initialPosts)
+
+    const response = await api
+      .post('/login')
+      .send({
+        email: user2.email,
+        password: initialUsers[1].password
+      })
+
+    token = response.body.token; // save the token
   })
 
   afterAll(async () => {
@@ -75,14 +86,14 @@ describe('USER tests', () => {
     })
   });
 
-  describe('POST /api/users', () => {
+  describe('POST /', () => {
     test('a new user can be added', async () => {
       const newUser = {
         name: "Alcira",
         email: "alcira@hotmail.com",
         password: "123456789"
       }
-      const response = await api.post('/api/users').send(newUser)
+      const response = await api.post('/').send(newUser)
       expect(response.statusCode).toBe(201)
       expect(response.body.email).toBe(newUser.email)
     })
@@ -93,22 +104,22 @@ describe('USER tests', () => {
         email: "carlos@gmail.com",
         password: "123456789"
       }
-      const response = await api.post('/api/users').send(newUser)
+      const response = await api.post('/').send(newUser)
       expect(response.statusCode).toBe(400)
       expect(response.body.message).toBe('email already registered')
     })
 
     test('a new user without data cannot be added', async () => {
       const newUser = {}
-      const response = await api.post('/api/users').send(newUser)
+      const response = await api.post('/').send(newUser)
       expect(response.body.message).toContain('User validation failed')
     })
   });
 
   describe('GET /api/users/{id}', () => {
-    test('should return a user data', async () => {      
+    test('should return a user data', async () => {
       const userId = user1.id.toString()
-      const response = await api.get(`/api/users/${userId}`)
+      const response = await api.get(`/api/users/${userId}`).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(200)
       expect(response.body.name).toBe(user1.name)
       expect(response.body.email).toBe(user1.email)
@@ -117,15 +128,22 @@ describe('USER tests', () => {
     test('should return BADREQUEST if id is invalid', async () => {
       const userId = constants.INVALIDID
 
-      const response = await api.get(`/api/users/${userId}`)
+      const response = await api.get(`/api/users/${userId}`).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(400)
     })
 
     test('should return NOTFOUND if id does not exist', async () => {
       const userId = constants.FAKEID
 
-      const response = await api.get(`/api/users/${userId}`)
+      const response = await api.get(`/api/users/${userId}`).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(404)
+    })
+
+    test('should return UNAUTHORIZED if token is invalid', async () => {
+      const userId = user1.id.toString()
+
+      const response = await api.get(`/api/users/${userId}`).set('Authorization', `Bearer ${constants.INVALIDTOKEN}`)
+      expect(response.statusCode).toBe(401)
     })
   });
 
@@ -136,7 +154,7 @@ describe('USER tests', () => {
         name: 'Jose',
         email: 'jose@gmail.com'
       }
-      const response = await api.put(`/api/users/${userId}`).send(newData)
+      const response = await api.put(`/api/users/${userId}`).send(newData).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(200)
       expect(response.body.name).toBe(newData.name)
       expect(response.body.email).toBe(newData.email)
@@ -149,7 +167,7 @@ describe('USER tests', () => {
         name: 'Jose',
         email: 'jose@gmail.com'
       }
-      const response = await api.put(`/api/users/${userId}`).send(newData)
+      const response = await api.put(`/api/users/${userId}`).send(newData).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(400)
     })
 
@@ -160,8 +178,19 @@ describe('USER tests', () => {
         name: 'Jose',
         email: 'jose@gmail.com'
       }
-      const response = await api.put(`/api/users/${userId}`).send(newData)
+      const response = await api.put(`/api/users/${userId}`).send(newData).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(404)
+    })
+
+    test('should return UNAUTHORIZED if token is invalid', async () => {
+      const userId = user1.id.toString()
+      const newData = {
+        name: 'Jose',
+        email: 'jose@gmail.com'
+      }
+
+      const response = await api.put(`/api/users/${userId}`).set('Authorization', `Bearer ${constants.INVALIDTOKEN}`)
+      expect(response.statusCode).toBe(401)
     })
   });
 
@@ -170,7 +199,7 @@ describe('USER tests', () => {
     test('should delete a user', async () => {
       const userId = user1.id.toString()
 
-      const response = await api.delete(`/api/users/${userId}`)
+      const response = await api.delete(`/api/users/${userId}`).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(200)
       expect(response.body).toBe(true)
     })
@@ -178,15 +207,22 @@ describe('USER tests', () => {
     test('should return BADREQUEST if id is invalid', async () => {
       const userId = constants.INVALIDID
 
-      const response = await api.delete(`/api/users/${userId}`)
+      const response = await api.delete(`/api/users/${userId}`).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(400)
     })
 
     test('should return NOTFOUND if user does not exist', async () => {
       const userId = constants.FAKEID
 
-      const response = await api.delete(`/api/users/${userId}`)
+      const response = await api.delete(`/api/users/${userId}`).set('Authorization', `Bearer ${token}`)
       expect(response.statusCode).toBe(404)
+    })
+
+    test('should return UNAUTHORIZED if token is invalid', async () => {
+      const userId = user1.id.toString()
+
+      const response = await api.delete(`/api/users/${userId}`).set('Authorization', `Bearer ${constants.INVALIDTOKEN}`)
+      expect(response.statusCode).toBe(401)
     })
   });
 

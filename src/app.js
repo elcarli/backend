@@ -1,6 +1,7 @@
 const express = require('express');
 const users = require('./user/index');
 const posts = require('./post/index');
+const routes = require('./route/index');
 const errorHandler = require('./error-handler/error-handler');
 
 function createApp() {
@@ -8,6 +9,7 @@ function createApp() {
   const app = express();
   app.use(express.json());
 
+  app.use('/', routes);
   app.use('/api/users', users);
   app.use('/api/posts', posts);
   app.use(errorHandler())

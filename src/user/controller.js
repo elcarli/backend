@@ -1,4 +1,6 @@
 const { User, Post } = require("../db");
+const jwt = require("jsonwebtoken")
+require('dotenv').config()
 
 async function getAll(req, res, next) {
   try {
@@ -23,7 +25,7 @@ async function getOne({ params: { id } }, res, next) {
   }
 }
 
-async function create({ body: { name, email, password } }, res, next) {
+async function signin({ body: { name, email, password } }, res, next) {
   try {
     const users = await User.find({ email: email })
     if (users.length > 0) {
@@ -86,11 +88,39 @@ async function postsByUser({ params: { id } }, res, next) {
   }
 }
 
+async function login({ body: { email, password } }, res, next) {
+  try {
+    if (!(email && password)) {
+      res.status(400).send("All input is required");
+    }
+
+    const user = await User.findOne({ email: email });
+    const match = await user.isValidPassword(password)
+
+    if (user && match) {
+      // Create token
+      const data = user.toObject()
+      delete data.password
+      const token = jwt.sign(data, process.env.JWT_SECRET, {
+        algorithm: "HS256",
+        expiresIn: '15m'
+      })
+
+      res.status(200).json({ data, token });
+    } else {
+      res.status(400).send("Invalid Credentials");
+    }
+  } catch (err) {
+    next(err)
+  }
+}
+
 module.exports = {
   getAll,
   getOne,
-  create,
+  signin,
   edit,
   deleteOne,
-  postsByUser
+  postsByUser,
+  login
 }
